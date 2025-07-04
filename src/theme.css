@@ -1,0 +1,31 @@
+:root {
+  --color-primary: #1976d2;
+  --color-secondary: #388e3c;
+  --color-accent: #ffb300;
+  --color-bg: #f5faff;
+  --color-text: #222;
+}
+
+.contact-btn {
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.08);
+}
+
+.contact-btn:hover {
+  background: var(--color-accent);
+  color: var(--color-text);
+  transform: translateY(-3px) scale(1.05);
+}
+
+.contact-btn.active {
+  background: var(--color-secondary);
+  color: #fff;
+  transform: scale(1.1);
+}
