@@ -1,0 +1,163 @@
+import { useState } from 'react';
+import { createContact } from '../services/contactService';
+
+export default function ContactForm({ onAddContact }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    isFavorite: false
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  function handleInputChange(e) {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setIsSaving(true);
+    setError(null);
+    
+    try {
+      const newContact = await createContact(formData);
+      // Limpiar formulario
+      setFormData({ name: '', phone: '', email: '', isFavorite: false });
+      // Notificar al componente padre
+      onAddContact?.(newContact);
+      
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  return (
+    <div style={{
+      padding: '1.5rem',
+      border: '1px solid #e5e7eb',
+      borderRadius: '0.5rem',
+      backgroundColor: 'white',
+      marginBottom: '1rem'
+    }}>
+      <h3 style={{ marginBottom: '1rem', color: '#374151' }}>➕ Crear Nuevo Contacto</h3>
+      
+      <form onSubmit={handleSubmit}>
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+            👤 Nombre completo *
+          </label>
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleInputChange}
+            placeholder="Ej: Juan Pérez"
+            required
+            disabled={isSaving}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              border: '1px solid #d1d5db',
+              borderRadius: '0.375rem',
+              fontSize: '1rem'
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+            📞 Teléfono *
+          </label>
+          <input
+            type="tel"
+            name="phone"
+            value={formData.phone}
+            onChange={handleInputChange}
+            placeholder="Ej: +51 987 654 321"
+            required
+            disabled={isSaving}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              border: '1px solid #d1d5db',
+              borderRadius: '0.375rem',
+              fontSize: '1rem'
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+            ✉️ Email
+          </label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
+            placeholder="Ej: juan.perez@email.com"
+            disabled={isSaving}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              border: '1px solid #d1d5db',
+              borderRadius: '0.375rem',
+              fontSize: '1rem'
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '1.5rem' }}>
+          <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              name="isFavorite"
+              checked={formData.isFavorite}
+              onChange={handleInputChange}
+              disabled={isSaving}
+              style={{ marginRight: '0.5rem' }}
+            />
+            ⭐ Marcar como favorito
+          </label>
+        </div>
+
+        {error && (
+          <div style={{
+            padding: '0.75rem',
+            backgroundColor: '#fef2f2',
+            border: '1px solid #f87171',
+            color: '#dc2626',
+            borderRadius: '0.375rem',
+            marginBottom: '1rem'
+          }}>
+            ❌ Error: {error}
+          </div>
+        )}
+        
+        <button 
+          type="submit" 
+          disabled={isSaving}
+          style={{
+            padding: '0.75rem 1.5rem',
+            backgroundColor: '#10b981',
+            color: 'white',
+            border: 'none',
+            borderRadius: '0.375rem',
+            fontSize: '1rem',
+            cursor: isSaving ? 'not-allowed' : 'pointer',
+            opacity: isSaving ? 0.5 : 1
+          }}
+        >
+          {isSaving ? '💾 Guardando...' : '💾 Guardar Contacto'}
+        </button>
+      </form>
+    </div>
+  );
+}
