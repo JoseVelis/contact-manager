@@ -6,7 +6,8 @@ export default function ContactForm({ onAddContact }) {
     name: '',
     phone: '',
     email: '',
-    isFavorite: false
+    company: '',
+    favorite: false
   });
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -19,20 +20,66 @@ export default function ContactForm({ onAddContact }) {
     }));
   }
 
+  function validateForm() {
+    if (!formData.name.trim()) {
+      setError('El nombre es obligatorio');
+      return false;
+    }
+    if (!formData.phone.trim()) {
+      setError('El teléfono es obligatorio');
+      return false;
+    }
+    if (formData.email && !formData.email.includes('@')) {
+      setError('El email debe tener un formato válido');
+      return false;
+    }
+    return true;
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
-    setIsSaving(true);
     setError(null);
     
+    if (!validateForm()) {
+      return;
+    }
+    
+    setIsSaving(true);
+    
     try {
+      console.log('🌐 Enviando datos del formulario:', formData);
+      console.log('🔗 URL de la API:', import.meta.env.VITE_API_URL || 'http://localhost:3000/api/contacts');
+      
       const newContact = await createContact(formData);
+      console.log('✅ Contacto creado exitosamente:', newContact);
+      
       // Limpiar formulario
-      setFormData({ name: '', phone: '', email: '', isFavorite: false });
+      setFormData({ name: '', phone: '', email: '', company: '', favorite: false });
       // Notificar al componente padre
       onAddContact?.(newContact);
       
     } catch (error) {
-      setError(error.message);
+      console.error('❌ Error al crear contacto:', error);
+      console.error('❌ Tipo de error:', error.name);
+      console.error('❌ Mensaje de error:', error.message);
+      console.error('❌ Stack trace:', error.stack);
+      
+      // Mensajes de error más específicos
+      let errorMessage = 'Error al crear contacto';
+      
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        errorMessage = 'No se pudo conectar con el servidor. Verifica que la API esté ejecutándose en http://localhost:3000';
+      } else if (error.message.includes('404')) {
+        errorMessage = 'Endpoint no encontrado. Verifica la URL de la API';
+      } else if (error.message.includes('500')) {
+        errorMessage = 'Error interno del servidor. Intenta más tarde';
+      } else if (error.message.includes('CORS')) {
+        errorMessage = 'Error de CORS. Verifica la configuración del servidor';
+      } else {
+        errorMessage = `Error al crear contacto: ${error.message}`;
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -114,12 +161,33 @@ export default function ContactForm({ onAddContact }) {
           />
         </div>
 
+        <div style={{ marginBottom: '1rem' }}>
+          <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>
+            🏢 Empresa
+          </label>
+          <input
+            type="text"
+            name="company"
+            value={formData.company}
+            onChange={handleInputChange}
+            placeholder="Ej: Tech Solutions"
+            disabled={isSaving}
+            style={{
+              width: '100%',
+              padding: '0.75rem',
+              border: '1px solid #d1d5db',
+              borderRadius: '0.375rem',
+              fontSize: '1rem'
+            }}
+          />
+        </div>
+
         <div style={{ marginBottom: '1.5rem' }}>
           <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
             <input
               type="checkbox"
-              name="isFavorite"
-              checked={formData.isFavorite}
+              name="favorite"
+              checked={formData.favorite}
               onChange={handleInputChange}
               disabled={isSaving}
               style={{ marginRight: '0.5rem' }}
@@ -137,7 +205,7 @@ export default function ContactForm({ onAddContact }) {
             borderRadius: '0.375rem',
             marginBottom: '1rem'
           }}>
-            ❌ Error: {error}
+            ❌ {error}
           </div>
         )}
         

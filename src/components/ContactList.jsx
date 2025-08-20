@@ -15,6 +15,8 @@ function ContactList({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [contactToDelete, setContactToDelete] = useState(null);
 
   // Cargar contactos automáticamente al montar el componente
   useEffect(() => {
@@ -39,20 +41,39 @@ function ContactList({
     }
   }
 
-  async function handleDeleteContact(id, name) {
-    const confirmed = window.confirm(`¿Estás seguro de que quieres eliminar a "${name}"? Esta acción no se puede deshacer.`);
+  function handleDeleteClick(contact) {
+    setContactToDelete(contact);
+    setShowDeleteDialog(true);
+  }
+
+  function handleCancelDelete() {
+    setShowDeleteDialog(false);
+    setContactToDelete(null);
+  }
+
+  async function handleConfirmDelete() {
+    if (!contactToDelete) return;
     
-    if (!confirmed) return;
+    setDeletingId(contactToDelete.id);
+    setShowDeleteDialog(false);
     
-    setDeletingId(id);
     try {
-      await deleteContact(id);
+      await deleteContact(contactToDelete.id);
       // Actualizar la lista local removiendo el contacto eliminado
-      setContacts(prev => prev.filter(contact => contact.id !== id));
+      setContacts(prev => prev.filter(contact => contact.id !== contactToDelete.id));
+      
+      // Si el contacto eliminado estaba seleccionado, deseleccionarlo
+      if (selectedContact?.id === contactToDelete.id) {
+        onSelectContact(null);
+      }
+      
+      console.log(`✅ Contacto "${contactToDelete.name}" eliminado exitosamente`);
     } catch (error) {
       setError(`Error al eliminar: ${error.message}`);
+      console.error('Error eliminando contacto:', error);
     } finally {
       setDeletingId(null);
+      setContactToDelete(null);
     }
   }
 
@@ -108,7 +129,7 @@ function ContactList({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                handleDeleteContact(contact.id, contact.name);
+                handleDeleteClick(contact);
               }}
               disabled={deletingId === contact.id}
               style={{
@@ -131,8 +152,53 @@ function ContactList({
           </div>
         ))}
       </div>
+
+      {/* Diálogo de confirmación de eliminación */}
+      {showDeleteDialog && contactToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center mb-4">
+              <div className="flex-shrink-0">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
+                  <span className="text-2xl">🗑️</span>
+                </div>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                  Confirmar eliminación
+                </h3>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                ¿Estás seguro de que quieres eliminar a <strong className="text-gray-900 dark:text-white">"{contactToDelete.name}"</strong>?
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                Esta acción no se puede deshacer.
+              </p>
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleCancelDelete}
+                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default ContactList;
+
